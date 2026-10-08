@@ -1,6 +1,6 @@
 # Extended Color Selector
 
-A powerful color selector for [`Krita`](https://krita.org/) 5.
+A powerful color selector for [`Krita`](https://krita.org/) 5 and 6.
 
 ## Features
 
@@ -42,13 +42,13 @@ To make it looks/sounds like a native Krita docker, just like wide-gamut color s
 Sometimes, you may want to download unreleased versions of this plugin. For example there's a bug fix, or a new feature.
 
 - Go to [Actions](https://github.com/443eb9/ExtendedColorSelector/actions) tab.
-- Click on the top most workflow run that has the name "Build Extended Color Selector (Qt5)".
+- Click on the top most workflow run that has the name "Build Extended Color Selector (Qt5)" or "Build Extended Color Selector (Qt6)".
 - Scroll down to find the "Artifacts" section, and download the `ExtendedColorSelector-{plugin-hash}-{krita-hash}-{os}.zip` file.
 
 And in more uncommon cases, you are using a different Krita version than the one used in CI, and even more uncommonly, the library version is changed that this plugin cannot link to it, you can
 
 - Fork this repo.
-- Modify `target_krita_commit` to the one you are using.
+- Modify `target_krita_commit_qt5` / `target_krita_commit_qt6` (and the matching `target_krita_branch_qt5` / `target_krita_branch_qt6`) to the ones you are using.
 - Push and wait the CI.
 
 If you are lucky enough, when internal APIs don't change, the CI will success and you can get your plugin in the "Artifacts" section.

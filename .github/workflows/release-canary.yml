@@ -4,6 +4,7 @@ on:
   workflow_run:
     workflows:
       - Build Extended Color Selector (Qt5)
+      - Build Extended Color Selector (Qt6)
     types:
       - completed
     branches:
@@ -15,7 +16,7 @@ permissions:
 
 concurrency:
   group: extended-color-selector-canary-release
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   publish:
@@ -28,41 +29,55 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       REPO: ${{ github.repository }}
-      RUN_ID: ${{ github.event.workflow_run.id }}
       COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
 
     steps:
-      - name: Download build artifacts unchanged
+      - name: Download build artifacts from both Qt workflows
         shell: bash
         run: |
           set -euo pipefail
 
-          artifacts_json="$(gh api "repos/$REPO/actions/runs/$RUN_ID/artifacts?per_page=100")"
-          artifact_count="$(jq '[.artifacts[] | select(.expired == false and (.name | startswith("ExtendedColorSelector-")))] | length' <<< "$artifacts_json")"
+          mkdir -p dist
+          total=0
 
-          if [ "$artifact_count" -ne 3 ]; then
-            echo "::error::Expected exactly 3 build artifacts, found $artifact_count"
-            jq -r '.artifacts[] | "- \(.name) (expired=\(.expired))"' <<< "$artifacts_json"
-            exit 1
-          fi
+          for wf in build-qt5.yml build-qt6.yml; do
+            runs_json="$(gh api "repos/$REPO/actions/workflows/$wf/runs?head_sha=$COMMIT_SHA&status=completed&per_page=20")"
+            run_id="$(jq -r '[.workflow_runs[] | select(.conclusion == "success")][0].id // empty' <<< "$runs_json")"
 
-          for suffix in linux windows macos; do
-            count="$(jq --arg suffix "$suffix" '[.artifacts[] | select(.expired == false and (.name | startswith("ExtendedColorSelector-")) and (.name | endswith("-" + $suffix)))] | length' <<< "$artifacts_json")"
-            if [ "$count" -ne 1 ]; then
-              echo "::error::Expected one $suffix artifact, found $count"
+            if [ -z "$run_id" ]; then
+              echo "No successful $wf run for $COMMIT_SHA yet; skipping publish (the other workflow's completion will publish)."
+              exit 0
+            fi
+
+            artifacts_json="$(gh api "repos/$REPO/actions/runs/$run_id/artifacts?per_page=100")"
+            artifact_count="$(jq '[.artifacts[] | select(.expired == false and (.name | startswith("ExtendedColorSelector-")) and (.name | contains("diagnostics") | not))] | length' <<< "$artifacts_json")"
+
+            if [ "$artifact_count" -ne 3 ]; then
+              echo "::error::$wf produced $artifact_count build artifacts, expected 3"
+              jq -r '.artifacts[] | "- \(.name) (expired=\(.expired))"' <<< "$artifacts_json"
               exit 1
             fi
+
+            for suffix in linux windows macos; do
+              count="$(jq --arg suffix "$suffix" '[.artifacts[] | select(.expired == false and (.name | startswith("ExtendedColorSelector-")) and (.name | contains("-" + $suffix + "-")) and (.name | contains("diagnostics") | not))] | length' <<< "$artifacts_json")"
+              if [ "$count" -ne 1 ]; then
+                echo "::error::Expected one $suffix artifact from $wf, found $count"
+                exit 1
+              fi
+            done
+
+            while IFS=$'\t' read -r artifact_id artifact_name; do
+              echo "Downloading $artifact_name from $wf"
+              gh api "repos/$REPO/actions/artifacts/$artifact_id/zip" > "dist/$artifact_name.zip"
+            done < <(
+              jq -r '.artifacts[] | select(.expired == false and (.name | startswith("ExtendedColorSelector-")) and (.name | contains("diagnostics") | not)) | [.id, .name] | @tsv' <<< "$artifacts_json"
+            )
+
+            total=$((total + artifact_count))
           done
 
-          mkdir -p dist
-          while IFS=$'\t' read -r artifact_id artifact_name; do
-            echo "Downloading $artifact_name"
-            gh api "repos/$REPO/actions/artifacts/$artifact_id/zip" > "dist/$artifact_name.zip"
-          done < <(
-            jq -r '.artifacts[] | select(.expired == false and (.name | startswith("ExtendedColorSelector-"))) | [.id, .name] | @tsv' <<< "$artifacts_json"
-          )
-
-          test "$(find dist -maxdepth 1 -type f -name '*.zip' | wc -l)" -eq 3
+          test "$total" -eq 6
+          test "$(find dist -maxdepth 1 -type f -name '*.zip' | wc -l)" -eq 6
           ls -lh dist
 
       - name: Move canary tag and replace release assets

@@ -25,7 +25,7 @@ set(
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-qt5_add_resources(extendedcolorselector_RESOURCES resources.qrc kis_gl_image_widget.qrc)
+qt_add_resources(extendedcolorselector_RESOURCES resources.qrc kis_gl_image_widget.qrc)
 
 kis_add_library(extendedcolorselector MODULE ${extendedcolorselector_SOURCES} ${extendedcolorselector_RESOURCES})
 
