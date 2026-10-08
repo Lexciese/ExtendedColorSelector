@@ -159,7 +159,11 @@ void EXColorSelectorDock::unsetCanvas()
     m_portableSelector->setCanvas(nullptr);
 }
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+void EXColorSelectorDock::enterEvent(QEnterEvent *event)
+#else
 void EXColorSelectorDock::enterEvent(QEvent *event)
+#endif
 {
     QDockWidget::enterEvent(event);
     m_colorPatchPopup->updateLastConfirmedColor(m_colorState->qColor());
@@ -185,7 +189,7 @@ void EXColorSelectorDock::updateSliders()
 {
     auto &settings = m_settingsState->settings[m_colorState->colorModel()->id()];
     if (settings.slidersEnabled) {
-        auto sliders = QVector(settings.extraSliders);
+        auto sliders = settings.extraSliders;
         sliders.prepend(m_colorState->colorModel()->id());
         m_sliders->resetColorModels(sliders);
     } else {

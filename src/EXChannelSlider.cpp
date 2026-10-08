@@ -354,7 +354,11 @@ void EXChannelSliderBar::edit(QMouseEvent *event)
 {
     Q_UNUSED(event);
 
-    float value = qBound(0.f, (float)event->pos().x() / width(), 1.f);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    float value = qBound(0.f, (float)event->position().x() / width(), 1.f);
+#else
+    float value = qBound(0.f, (float)event->localPos().x() / width(), 1.f);
+#endif
     m_colorAtCurrentModel[m_channelIndex] = value;
 }
 

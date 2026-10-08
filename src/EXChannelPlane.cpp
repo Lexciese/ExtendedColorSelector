@@ -361,7 +361,11 @@ void EXChannelPlane::startEdit(QMouseEvent *event, bool isShift)
         return;
     }
 
-    QPointF widgetCoord = QPointF(event->pos()) / size();
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    QPointF widgetCoord = event->position() / size();
+#else
+    QPointF widgetCoord = event->localPos() / size();
+#endif
     unoffsetWidgetCoord(widgetCoord);
     QPointF centeredCoord = widgetCoord * 2 - QPointF(1, 1);
     float dist = qSqrt(centeredCoord.x() * centeredCoord.x() + centeredCoord.y() * centeredCoord.y());
@@ -400,7 +404,11 @@ void EXChannelPlane::edit(QMouseEvent *event)
         return;
     }
 
-    QPointF widgetCoord = QPointF(event->pos()) / size();
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    QPointF widgetCoord = event->position() / size();
+#else
+    QPointF widgetCoord = event->localPos() / size();
+#endif
     unoffsetWidgetCoord(widgetCoord);
     handleCursorEdit(widgetCoord);
 }

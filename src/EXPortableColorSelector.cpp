@@ -96,7 +96,11 @@ void EXPortableColorSelector::toggle()
     }
 }
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+void EXPortableColorSelector::enterEvent(QEnterEvent *event)
+#else
 void EXPortableColorSelector::enterEvent(QEvent *event)
+#endif
 {
     QDialog::enterEvent(event);
     m_colorPatchPopup->updateLastConfirmedColor(m_colorState->qColor());
@@ -127,7 +131,7 @@ void EXPortableColorSelector::updateSliders()
 {
     auto &settings = m_settingsState->settings[m_colorState->colorModel()->id()];
     if (settings.slidersEnabled) {
-        auto sliders = QVector(settings.extraSliders);
+        auto sliders = settings.extraSliders;
         sliders.prepend(m_colorState->colorModel()->id());
         m_sliders->resetColorModels(sliders);
     } else {

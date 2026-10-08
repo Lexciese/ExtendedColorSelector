@@ -21,7 +21,11 @@ EXEditableImage::EXEditableImage(QWidget *parent)
 
 void EXEditableImage::mousePressEvent(QMouseEvent *event)
 {
-    m_editStart = event->pos();
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    m_editStart = event->position();
+#else
+    m_editStart = event->localPos();
+#endif
     startEdit(event, event->modifiers().testFlag(Qt::ShiftModifier) || event->modifiers().testFlag(Qt::AltModifier));
 
     Q_EMIT sigValueChangeStarted();
@@ -40,7 +44,11 @@ void EXEditableImage::mouseMoveEvent(QMouseEvent *event)
     if (factor == 1.0f) {
         edit(event);
     } else {
-        shift(event, QVector2D(event->pos() - m_editStart) * factor);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        shift(event, QVector2D(event->position() - m_editStart) * factor);
+#else
+        shift(event, QVector2D(event->localPos() - m_editStart) * factor);
+#endif
     }
 
     Q_EMIT sigValueChanging();
